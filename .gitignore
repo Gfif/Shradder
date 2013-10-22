@@ -1,0 +1,8 @@
+*~
+*.o
+*.dex
+*.class
+*.pyc
+tags
+cscope.files
+cscope.out
