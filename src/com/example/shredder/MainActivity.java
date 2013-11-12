@@ -9,6 +9,7 @@ import java.util.List;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
@@ -21,18 +22,20 @@ public class MainActivity extends Activity {
 	private Socket sock;
 	private BufferedReader sockIn;
 	private PrintWriter sockOut;
+	public boolean connected;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		messages = new LinkedList<String>();
+		connected = false;
 		ConnectTask connectTask = new ConnectTask(this);
 		connectTask.execute("isc.tsu.ru", 1987);
 	}
-	
+		
 	protected void onDestroy() {
-		android.os.Process.killProcess(android.os.Process.myPid());
+		//android.os.Process.killProcess(android.os.Process.myPid());
 		super.onDestroy();
 	}
 	
@@ -107,23 +110,28 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	public void addErrorMessage(Strin err) {
+	public void addErrorMessage(String err) {
 		synchronized(messages) {
 			messages.add(new String("ERRORORR: " + err));
 		}
 	}
 	
 	public boolean sendMessage(View view) {
-		EditText editText = (EditText)findViewById(R.id.input_area);
-		String text = editText.getText().toString();
-		addMessage(text);
-		new SendTask(this).execute(text);
-		updateText();
-		editText.setText("");
-		Toast toast = Toast.makeText(getApplicationContext(), 
-				   "Sending message...", Toast.LENGTH_SHORT); 
-		toast.show();
-		return true;
+		if (!connected) {
+			new ToastMaker("You are not connected\nTry to reconnect",
+					getApplicationContext(), 1500).run(); 
+			ConnectTask connectTask = new ConnectTask(this);
+			connectTask.execute("isc.tsu.ru", 1987);
+			return false;
+		} else {
+			EditText editText = (EditText)findViewById(R.id.input_area);
+			String text = editText.getText().toString();
+			addMessage(text);
+			new SendTask(this).execute(text);
+			updateText();
+			editText.setText(""); 
+			return true;
+		}
 	}
 
 }

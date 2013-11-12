@@ -9,13 +9,11 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
-import android.widget.Toast;
 
 public class ConnectTask extends AsyncTask<Object, Void, Void> {
 	
@@ -25,9 +23,10 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 	private PrintWriter sockOut;
 	private ProgressDialog dialog;
 	
-	public ConnectTask(Activity activity) {
+	public ConnectTask(MainActivity activity) {
 		super();
 		this.activity = (MainActivity)activity;
+		activity.connected = false;
 	}
 	
 	@Override
@@ -38,12 +37,13 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 		return null;
 	}
 	
-	private void checkNetwork() {
+	private boolean checkNetwork() {
 		ConnectivityManager cm = (ConnectivityManager)activity.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
 		if (activeNetwork == null || ! activeNetwork.isConnectedOrConnecting()) { 
-			// ...
+			return false;
 		}
+		return true;
 	}
 	
 	private ProgressDialog createWaitDialog() {
@@ -51,29 +51,35 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 	}
 	
 	private void reconnectSocket(final String host, final int port) {
-		checkNetwork();
-		activity.runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				dialog = createWaitDialog();
-			}
-		});
-		try {
-			sock = new Socket(host, port);
-			sock.setSoTimeout(2000);
-			sockIn = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-			sockOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(sock.getOutputStream())));
-		} catch (UnknownHostException uhex) {
-			
-		} catch (IOException ioex) {
-			
+		if (!checkNetwork()) {
+			activity.runOnUiThread(new ToastMaker("Can't connect to network",
+					activity.getApplicationContext(), 3000));
 		}
-		activity.runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				dialog.dismiss();
+		else {
+			activity.connected = true;
+			activity.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					dialog = createWaitDialog();
+				}
+			});
+			try {
+				sock = new Socket(host, port);
+				sock.setSoTimeout(5000);
+				sockIn = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+				sockOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(sock.getOutputStream())));
+			} catch (UnknownHostException uhex) {
+				
+			} catch (IOException ioex) {
+				
 			}
-		});
+			activity.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					dialog.dismiss();
+				}
+			});
+		}
 	}
 	
 	@Override
@@ -81,10 +87,13 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 		activity.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				activity.setSocket(sock);
-				activity.setSockIn(sockIn);
-				activity.setSockOut(sockOut);
-				new Thread(new Receiver(activity)).start();
+				
+				if (activity.connected) {
+					activity.setSocket(sock);
+					activity.setSockIn(sockIn);
+					activity.setSockOut(sockOut);
+					new Thread(new Receiver(activity)).start();
+				}
 			}
 		});
 	}

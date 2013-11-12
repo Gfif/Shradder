@@ -2,13 +2,11 @@ package com.example.shredder;
 
 import java.io.IOException;
 
-import android.app.Activity;
-
 public class Receiver implements Runnable {
 	
 	MainActivity activity;
 	
-	public Receiver(Activity activity) {
+	public Receiver(MainActivity activity) {
 		this.activity = (MainActivity)activity;
 	}
 	
@@ -25,7 +23,7 @@ public class Receiver implements Runnable {
 				line = activity.getSockIn().readLine();
 			}
 		} catch (IOException ioex) {
-			// ...
+			activity.connected = false;
 		}
 	}
 
