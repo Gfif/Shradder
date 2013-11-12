@@ -60,6 +60,7 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 		});
 		try {
 			sock = new Socket(host, port);
+			sock.setSoTimeout(2000);
 			sockIn = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 			sockOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(sock.getOutputStream())));
 		} catch (UnknownHostException uhex) {

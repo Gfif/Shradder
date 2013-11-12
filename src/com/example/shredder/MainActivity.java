@@ -107,6 +107,12 @@ public class MainActivity extends Activity {
 		}
 	}
 	
+	public void addErrorMessage(Strin err) {
+		synchronized(messages) {
+			messages.add(new String("ERRORORR: " + err));
+		}
+	}
+	
 	public boolean sendMessage(View view) {
 		EditText editText = (EditText)findViewById(R.id.input_area);
 		String text = editText.getText().toString();
