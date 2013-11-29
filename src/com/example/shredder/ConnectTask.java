@@ -9,24 +9,28 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.util.Log;
+
 
 public class ConnectTask extends AsyncTask<Object, Void, Void> {
-	
+
 	private MainActivity activity;
 	private Socket sock;
 	private BufferedReader sockIn;
 	private PrintWriter sockOut;
 	private ProgressDialog dialog;
 	
-	public ConnectTask(MainActivity activity) {
+	private static final String TAG = "ConnectTask";
+	
+	public ConnectTask(Activity activity) {
 		super();
 		this.activity = (MainActivity)activity;
-		activity.connected = false;
 	}
 	
 	@Override
@@ -38,11 +42,14 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 	}
 	
 	private boolean checkNetwork() {
+		Log.d(TAG, "checking network...");
 		ConnectivityManager cm = (ConnectivityManager)activity.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
 		if (activeNetwork == null || ! activeNetwork.isConnectedOrConnecting()) { 
+			Log.d(TAG, "checkNetwork failure.");
 			return false;
 		}
+		Log.d(TAG, "checkNetwork finishes successfully.");
 		return true;
 	}
 	
@@ -56,7 +63,7 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 					activity.getApplicationContext(), 3000));
 		}
 		else {
-			activity.connected = true;
+			activity.setConnected(true);
 			activity.runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
@@ -65,13 +72,19 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 			});
 			try {
 				sock = new Socket(host, port);
-				sock.setSoTimeout(5000);
+				sock.setSoTimeout(5 * 1000 * 10);
 				sockIn = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 				sockOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(sock.getOutputStream())));
 			} catch (UnknownHostException uhex) {
+				Log.d(TAG, "UnknownHostException error");
+				activity.runOnUiThread(new ToastMaker("Unknown Host",
+						activity.getApplicationContext(), 3000));
 				
 			} catch (IOException ioex) {
-				
+				Log.d(TAG, "IOException");
+				activity.runOnUiThread(new ToastMaker("Can't connect to network",
+						activity.getApplicationContext(), 3000));
+				activity.setConnected(false);
 			}
 			activity.runOnUiThread(new Runnable() {
 				@Override
@@ -87,8 +100,13 @@ public class ConnectTask extends AsyncTask<Object, Void, Void> {
 		activity.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				
-				if (activity.connected) {
+				if (activity.isConnected()) {
+					activity.addMessage("<-- Connected -->");
+					activity.runOnUiThread(new Runnable() {
+						public void run() {
+							activity.updateText();
+						}
+					});
 					activity.setSocket(sock);
 					activity.setSockIn(sockIn);
 					activity.setSockOut(sockOut);

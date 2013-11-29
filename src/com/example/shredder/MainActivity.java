@@ -9,12 +9,12 @@ import java.util.List;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
+//import android.text.method.BaseMovementMethod;
 
 public class MainActivity extends Activity {
 	
@@ -22,20 +22,22 @@ public class MainActivity extends Activity {
 	private Socket sock;
 	private BufferedReader sockIn;
 	private PrintWriter sockOut;
-	public boolean connected;
+	private boolean connected;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		TextView textView = (TextView)findViewById(R.id.chat_area);
+		textView.setMovementMethod(new ScrollingMovementMethod());
 		messages = new LinkedList<String>();
 		connected = false;
 		ConnectTask connectTask = new ConnectTask(this);
 		connectTask.execute("isc.tsu.ru", 1987);
 	}
-		
+	
+	@Override
 	protected void onDestroy() {
-		//android.os.Process.killProcess(android.os.Process.myPid());
 		super.onDestroy();
 	}
 	
@@ -62,6 +64,14 @@ public class MainActivity extends Activity {
 	public void setSockOut(PrintWriter sockOut) {
 		this.sockOut = sockOut;
 	}
+	
+	public void setConnected(boolean connected) {
+		this.connected = connected;
+	}
+	
+	public boolean isConnected() {
+		return connected;
+	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -75,7 +85,7 @@ public class MainActivity extends Activity {
 		StringBuffer text = new StringBuffer();
 		LinkedList<String> oldmessages = new LinkedList<String>(
 				Arrays.asList(textView.getText().toString().split("\n")));
-		for (int i = 0; i < oldmessages.size() + messages.size() - 10; ++i) {
+		for (int i = 0; i < oldmessages.size() + messages.size() - 100; ++i) {
 			oldmessages.remove();
 		}
 		
@@ -93,6 +103,7 @@ public class MainActivity extends Activity {
 			messages.clear();
 		}
 		textView.setText(text.toString());
+		
 	}
 	
 	public void processMessage(String msg) {
@@ -118,7 +129,7 @@ public class MainActivity extends Activity {
 	
 	public boolean sendMessage(View view) {
 		if (!connected) {
-			new ToastMaker("You are not connected\nTry to reconnect",
+			new ToastMaker("Try to reconnect",
 					getApplicationContext(), 1500).run(); 
 			ConnectTask connectTask = new ConnectTask(this);
 			connectTask.execute("isc.tsu.ru", 1987);
@@ -129,7 +140,7 @@ public class MainActivity extends Activity {
 			addMessage(text);
 			new SendTask(this).execute(text);
 			updateText();
-			editText.setText(""); 
+			editText.setText("");
 			return true;
 		}
 	}
