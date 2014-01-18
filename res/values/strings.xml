@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Shredder</string>
+    <string name="action_settings">Settings</string>
+    <string name="topic_not_set">Topic don\'t set!</string>
+    <string name="send_button">Hey!</string>
+
+</resources>
